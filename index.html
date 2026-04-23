@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ZS Official Player</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@1"></script>
+
+    <style>
+        /* --- AAPKA PURANA CSS BINA KISI CHANGE KE YAHAN HAI --- */
+        .zs-player-container, .zs-player-container * { box-sizing: border-box; margin: 0; padding: 0; }
+        .zs-player-container ::-webkit-scrollbar { width: 8px; height: 8px; }
+        .zs-player-container ::-webkit-scrollbar-track { background: #030617; }
+        .zs-player-container ::-webkit-scrollbar-thumb { background: #D4AF37; border-radius: 10px; }
+        .zs-player-container ::-webkit-scrollbar-thumb:hover { background: #f1c40f; }
+        .zs-player-container { font-family: 'Inter', sans-serif; width: 100%; display: flex; justify-content: center; padding: 20px 0; position: relative; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; background: transparent; }
+        .zs-player-container .container { width: 95%; max-width: 850px; position: relative; z-index: 10; margin: 0 auto; }
+        .zs-player-container .player-wrapper { position: relative; border-radius: 24px; overflow: hidden; background: #000; border: 2px solid rgba(212, 175, 55, 0.3); box-shadow: 0 20px 60px rgba(0, 0, 0, 0.9), inset 0 0 15px rgba(212, 175, 55, 0.1); cursor: pointer; transition: border-color 0.3s ease; touch-action: manipulation; -webkit-tap-highlight-color: transparent; outline: none; }
+        .zs-player-container .player-wrapper:hover { border-color: rgba(212, 175, 55, 0.5); }
+        .zs-player-container .player-wrapper.is-fullscreen, .zs-player-container .player-wrapper:fullscreen, .zs-player-container .player-wrapper:-webkit-full-screen { position: fixed !important; top: 0 !important; left: 0 !important; width: 100vw !important; height: 100vh !important; max-width: none !important; border-radius: 0 !important; border: none !important; z-index: 9999 !important; padding: 0 !important; margin: 0 !important; overflow: visible !important; background: #000 !important; }
+        .zs-player-container .top-right-container { position: absolute; top: max(20px, env(safe-area-inset-top)); right: max(20px, env(safe-area-inset-right)); z-index: 150; opacity: 0; transition: opacity 0.4s ease; pointer-events: none; }
+        .zs-player-container .player-wrapper.show-controls .top-right-container { opacity: 1; pointer-events: auto; }
+        .zs-player-container .settings-menu { position: absolute; top: 55px; right: 0; background: rgba(15, 15, 20, 0.95); border: 1px solid rgba(212, 175, 55, 0.3); border-radius: 12px; padding: 8px 0; display: none; flex-direction: column; min-width: 180px; backdrop-filter: blur(15px); box-shadow: 0 5px 25px rgba(0, 0, 0, 0.7); transform: translateY(-10px); opacity: 0; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .zs-player-container .settings-menu.show { display: flex; transform: translateY(0); opacity: 1; }
+        .zs-player-container .menu-item { background: none; border: none; color: #e4e4e7; padding: 12px 20px; font-family: 'Inter', sans-serif; font-size: 14px; font-weight: 500; cursor: pointer; display: flex; align-items: center; gap: 12px; text-align: left; transition: background 0.2s ease, color 0.2s ease; outline: none; width: 100%; }
+        .zs-player-container .menu-item:hover { background: rgba(212, 175, 55, 0.15); color: #D4AF37; }
+        .zs-player-container .download-modal { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(5px); z-index: 999999; display: none; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.3s ease; }
+        .zs-player-container .download-modal.show { display: flex; opacity: 1; }
+        .zs-player-container .modal-content { background: rgba(10, 10, 15, 0.98); border: 2px solid rgba(212, 175, 55, 0.4); border-radius: 16px; padding: 20px; width: 90%; max-width: 300px; text-align: center; position: relative; transform: scale(0.9); transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 10px 40px rgba(0,0,0,0.9); overflow: hidden; }
+        .zs-player-container .download-modal.show .modal-content { transform: scale(1); }
+        .zs-player-container .modal-title { color: #D4AF37; font-size: 18px; margin-bottom: 15px; font-family: 'Inter', sans-serif; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; }
+        .zs-player-container .modal-close { position: absolute; top: 10px; right: 15px; background: none; border: none; color: #ccc; font-size: 26px; cursor: pointer; }
+        .zs-player-container .modal-link { display: block; padding: 10px; margin: 6px 0; background: rgba(255, 255, 255, 0.05); color: #fff; text-decoration: none; border-radius: 10px; border: 1px solid rgba(212, 175, 55, 0.15); font-size: 14px; font-weight: 500; transition: 0.2s; }
+        .zs-player-container .modal-link:hover { background: rgba(212, 175, 55, 0.2); border-color: #D4AF37; color: #D4AF37; }
+        .zs-player-container video { width: 100%; display: block; aspect-ratio: 16 / 9; background: #000; object-fit: cover; pointer-events: none; }
+        .zs-player-container .player-wrapper.is-fullscreen video { width: 100% !important; height: 100% !important; aspect-ratio: auto !important; object-fit: contain !important; }
+        .zs-player-container .controls { position: absolute; bottom: 0; left: 0; right: 0; background: linear-gradient(to top, rgba(0, 0, 0, 0.95) 0%, rgba(0, 0, 0, 0.8) 50%, transparent 100%); padding: 30px max(25px, env(safe-area-inset-right)) 20px max(25px, env(safe-area-inset-left)); transform: translateY(100%); transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.4s ease; opacity: 0; z-index: 101; }
+        .zs-player-container .player-wrapper.show-controls .controls { transform: translateY(0); opacity: 1; }
+        .zs-player-container .progress-container { width: 100%; height: 7px; background: rgba(255, 255, 255, 0.1); border-radius: 10px; margin-bottom: 20px; cursor: pointer; position: relative; transition: height 0.2s ease; }
+        .zs-player-container .progress-container:hover { height: 9px; }
+        .zs-player-container .seek-preview-bar { position: absolute; top: 0; left: 0; height: 100%; background: rgba(255, 255, 255, 0.4); border-radius: 10px; width: 0%; pointer-events: none; opacity: 0; transition: opacity 0.4s ease; z-index: 1; }
+        .zs-player-container .seek-preview-bar.active { opacity: 1; }
+        .zs-player-container .progress-bar { height: 100%; background: linear-gradient(90deg, #D4AF37 0%, #f1c40f 100%); border-radius: 10px; width: 0%; position: relative; box-shadow: 0 0 20px rgba(212, 175, 55, 0.7); z-index: 2; }
+        .zs-player-container .controls-row { display: flex; align-items: center; gap: 18px; pointer-events: auto; }
+        .zs-player-container .btn { background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(212, 175, 55, 0.2); border-radius: 12px; width: 45px; height: 45px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.3s ease; color: rgba(212, 175, 55, 0.9); font-size: 18px; backdrop-filter: blur(10px); text-decoration: none; -webkit-tap-highlight-color: transparent; }
+        .zs-player-container .btn svg { display: block; }
+        .zs-player-container .btn:hover { background: rgba(212, 175, 55, 0.15); border-color: rgba(212, 175, 55, 0.5); transform: scale(1.08); color: #fff; box-shadow: 0 0 15px rgba(212, 175, 55, 0.4); }
+        .zs-player-container .time-display { color: rgba(212, 175, 55, 0.9); font-size: 14px; font-weight: 500; min-width: 110px; }
+        .zs-player-container .spacer { flex: 1; }
+        .zs-player-container .loading { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); display: none; z-index: 50; pointer-events: none; }
+        .zs-player-container .loading.active { display: block; }
+        .zs-player-container .spinner { width: 65px; height: 65px; border: 5px solid rgba(212, 175, 55, 0.1); border-top: 5px solid #D4AF37; border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .zs-player-container .center-indicator { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.5); background: rgba(0, 0, 0, 0.6); border-radius: 50%; width: 80px; height: 80px; display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; z-index: 100; color: #D4AF37; }
+        .zs-player-container .center-indicator.active { animation: centerPop 0.5s ease-out forwards; }
+        .zs-player-container .center-indicator svg { width: 40px; height: 40px; fill: currentColor; }
+        @keyframes centerPop { 0% { transform: translate(-50%, -50%) scale(0.8); opacity: 1; } 80% { opacity: 1; } 100% { transform: translate(-50%, -50%) scale(1.3); opacity: 0; } }
+        .zs-player-container .dt-indicator { position: absolute; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; align-items: center; justify-content: center; color: #D4AF37; background: rgba(0, 0, 0, 0.7); border-radius: 50%; width: 80px; height: 80px; opacity: 0; pointer-events: none; z-index: 120; }
+        .zs-player-container .dt-indicator.left { left: 15%; }
+        .zs-player-container .dt-indicator.right { right: 15%; }
+        .zs-player-container .dt-indicator svg { width: 30px; height: 30px; fill: currentColor; }
+        .zs-player-container .dt-indicator span { font-family: 'Inter', sans-serif; font-size: 13px; font-weight: bold; margin-top: 2px; }
+        .zs-player-container .dt-indicator.active { animation: dtPop 0.5s ease-out forwards; }
+        @keyframes dtPop { 0% { transform: translateY(-50%) scale(0.8); opacity: 1; } 80% { opacity: 1; } 100% { transform: translateY(-50%) scale(1.3); opacity: 0; } }
+        @media (max-width: 1100px) { .zs-player-container .top-right-container { top: max(15px, env(safe-area-inset-top)); right: max(25px, env(safe-area-inset-right)); } .zs-player-container .controls { padding: 20px max(15px, env(safe-area-inset-right)) 15px max(15px, env(safe-area-inset-left)); } .zs-player-container .controls-row { gap: 6px; } .zs-player-container .btn { width: 36px; height: 36px; border-radius: 8px; } .zs-player-container .btn svg { width: 17px; height: 17px; } .zs-player-container .time-display { font-size: 11px; min-width: auto; white-space: nowrap; } .zs-player-container .dt-indicator, .zs-player-container .center-indicator { width: 70px; height: 70px; } .zs-player-container .dt-indicator svg { width: 25px; height: 25px; } .zs-player-container .center-indicator svg { width: 35px; height: 35px; } .zs-player-container .dt-indicator span { font-size: 11px; } .zs-player-container .modal-content { max-width: 260px; padding: 15px; } .zs-player-container .modal-title { font-size: 16px; margin-bottom: 10px; } }
+        @media (max-width: 480px) { .zs-player-container .controls { padding: 15px 12px 10px 12px; } .zs-player-container .controls-row { gap: 6px; } .zs-player-container .btn { width: 34px; height: 34px; border-radius: 8px; } .zs-player-container .btn svg { width: 16px; height: 16px; } .zs-player-container .time-display { font-size: 10px; } .zs-player-container .top-right-container { top: 10px; right: 10px; } .zs-player-container .settings-menu { top: 45px; min-width: 140px; } .zs-player-container .menu-item { font-size: 13px; padding: 10px 15px; } .zs-player-container .modal-content { max-width: 250px; padding: 15px; } .zs-player-container .modal-title { font-size: 16px; margin-bottom: 12px; } }
+    </style>
+
+</head>
+<body>
+
+<div class="zs-player-container">
+    <div class="container" id="mainContainer">
+
+        <div class="player-wrapper show-controls" id="playerWrapper">
+            <div class="top-right-container">
+                <button class="btn" id="settingsBtn">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg>
+                </button>
+                <div class="settings-menu" id="settingsMenu">
+                    <button class="menu-item" id="speedBtn">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                        Speed
+                    </button>
+                    <button class="menu-item" id="downloadBtn">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                        Download
+                    </button>
+                </div>
+            </div>
+
+            <div class="download-modal" id="speedModal">
+                <div class="modal-content">
+                    <button class="modal-close" id="closeSpeedModalBtn">&times;</button>
+                    <h3 class="modal-title">Playback Speed</h3>
+                    <a href="#" class="modal-link speed-option" data-speed="0.5">0.5x</a>
+                    <a href="#" class="modal-link speed-option" data-speed="1">Normal (1x)</a>
+                    <a href="#" class="modal-link speed-option" data-speed="1.25">1.25x</a>
+                    <a href="#" class="modal-link speed-option" data-speed="1.5">1.5x</a>
+                    <a href="#" class="modal-link speed-option" data-speed="2">2x</a>
+                </div>
+            </div>
+
+            <div class="download-modal" id="downloadModal">
+                <div class="modal-content">
+                    <button class="modal-close" id="closeModalBtn">&times;</button>
+                    <div style="padding: 20px 10px; color: #D4AF37; font-family: 'Inter', sans-serif; font-size: 16px; font-weight: 500; letter-spacing: 1px;">
+                        Coming Soon...
+                    </div>
+                </div>
+            </div>
+
+            <div class="loading"><div class="spinner"></div></div>
+            
+            <div class="dt-indicator left" id="dtLeft"><svg viewBox="0 0 24 24"><polygon points="11,19 2,12 11,5"></polygon><polygon points="22,19 13,12 22,5"></polygon></svg><span>5s</span></div>
+            <div class="dt-indicator right" id="dtRight"><svg viewBox="0 0 24 24"><polygon points="13,19 22,12 13,5"></polygon><polygon points="2,19 11,12 2,5"></polygon></svg><span>5s</span></div>
+            
+            <div class="center-indicator" id="centerIndicator">
+                <svg viewBox="0 0 24 24" id="centerIcon" fill="currentColor"></svg>
+            </div>
+
+            <video id="video" playsinline preload="auto" poster="https://files.catbox.moe/v33t1o.jpg"></video>
+
+            <div class="controls" id="controls">
+                <div class="progress-container" id="progressContainer"><div class="seek-preview-bar" id="seekPreviewBar"></div><div class="progress-bar" id="progressBar"></div></div>
+                <div class="controls-row">
+                    <button class="btn" id="rewindBtn">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"></polyline><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path></svg>
+                    </button>
+                    <button class="btn btn-play" id="playBtn">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                    </button>
+                    <button class="btn" id="forwardBtn">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
+                    </button>
+                    <div class="time-display" id="timeDisplay">00:00 / 00:00</div>
+                    <div class="spacer"></div>
+
+                    <button class="btn" id="muteBtn" title="Mute/Unmute (M)">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
+                    </button>
+
+                    <button class="btn" id="fullscreenBtn" title="Fullscreen (F)">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path></svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ASYNC FUNCTION BANAYA TAAKI TOKEN FETCH HO SAKE
+    (async function() {
+        const video = document.getElementById('video');
+        const playerWrapper = document.getElementById('playerWrapper');
+        
+        // --- NEW SECURITY LINKS CONFIGURATION ---
+        const RENDER_URL = "https://key-server-b2qf.onrender.com"; 
+        const videoSource = "stream.m3u8";
+
+        const playBtn = document.getElementById('playBtn');
+        const rewindBtn = document.getElementById('rewindBtn');
+        const forwardBtn = document.getElementById('forwardBtn');
+        const progressContainer = document.getElementById('progressContainer');
+        const progressBar = document.getElementById('progressBar');
+        const seekPreviewBar = document.getElementById('seekPreviewBar'); 
+        const timeDisplay = document.getElementById('timeDisplay');
+        const muteBtn = document.getElementById('muteBtn');
+        const fullscreenBtn = document.getElementById('fullscreenBtn');
+        const loading = document.querySelector('.loading');
+        
+        const dtLeft = document.getElementById('dtLeft');
+        const dtRight = document.getElementById('dtRight');
+        const centerIndicator = document.getElementById('centerIndicator');
+        const centerIcon = document.getElementById('centerIcon');
+        
+        const settingsBtn = document.getElementById('settingsBtn');
+        const settingsMenu = document.getElementById('settingsMenu');
+        const speedBtn = document.getElementById('speedBtn');
+        const downloadBtn = document.getElementById('downloadBtn');
+        
+        const speedModal = document.getElementById('speedModal');
+        const closeSpeedModalBtn = document.getElementById('closeSpeedModalBtn');
+        const speedOptions = document.querySelectorAll('.speed-option');
+        
+        const downloadModal = document.getElementById('downloadModal');
+        const closeModalBtn = document.getElementById('closeModalBtn');
+
+        let hideControlsTimeout;
+        let lastTapTime = 0; 
+        const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+
+        settingsBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            settingsMenu.classList.toggle('show');
+            resetControlsTimeoutOnAction();
+        });
+
+        speedBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            settingsMenu.classList.remove('show'); 
+            speedModal.classList.add('show'); 
+            resetControlsTimeoutOnAction();
+        });
+
+        downloadBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            settingsMenu.classList.remove('show'); 
+            downloadModal.classList.add('show'); 
+            resetControlsTimeoutOnAction();
+        });
+
+        closeModalBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            downloadModal.classList.remove('show');
+        });
+
+        downloadModal.addEventListener('click', (e) => {
+            if (e.target === downloadModal) downloadModal.classList.remove('show');
+        });
+
+        closeSpeedModalBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            speedModal.classList.remove('show');
+        });
+
+        speedModal.addEventListener('click', (e) => {
+            if (e.target === speedModal) speedModal.classList.remove('show');
+        });
+
+        speedOptions.forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                video.playbackRate = parseFloat(link.getAttribute('data-speed'));
+                speedModal.classList.remove('show');
+            });
+        });
+
+        document.addEventListener('contextmenu', (e) => e.preventDefault());
+
+        // --- NEW SECURE TOKEN HLS LOGIC ---
+        try {
+            // Guard se permission pass la rahe hain
+            const response = await fetch(`${RENDER_URL}/generate-token`);
+            if (!response.ok) throw new Error("Security Block");
+            const data = await response.json();
+            const secureToken = data.token;
+
+            if (Hls.isSupported()) {
+                const hls = new Hls({ 
+                    maxMaxBufferLength: 60, 
+                    maxBufferSize: 60 * 1000 * 1000,
+                    xhrSetup: function(xhr, url) {
+                        // Chabhi mangte waqt token attach karna
+                        if (url.includes('get-my-key')) {
+                            xhr.open('GET', `${RENDER_URL}/get-my-key?token=${secureToken}`, true);
+                        }
+                    }
+                });
+                hls.loadSource(videoSource);
+                hls.attachMedia(video);
+                
+                hls.on(Hls.Events.ERROR, (event, data) => { 
+                    if (data.details === 'keyLoadError') {
+                        alert("SECURITY BLOCK: Unauthorized Download Blocked 🚫");
+                    }
+                });
+            } else {
+                video.src = videoSource;
+            }
+        } catch (err) {
+            console.error("DRM Token Error:", err);
+        }
+        // ----------------------------------
+
+        video.addEventListener('play', () => playerWrapper.classList.add('has-started'));
+
+        function fastSeekOptimized(amount) {
+            let newTime = video.currentTime + amount;
+            video.currentTime = Math.max(0, Math.min(newTime, video.duration));
+        }
+
+        function triggerIndicator(element) {
+            element.classList.remove('active');
+            void element.offsetWidth; // trigger reflow
+            element.classList.add('active');
+            resetControlsTimeoutOnAction();
+        }
+
+        function togglePlay() {
+            if (video.paused) { 
+                video.play().then(() => { 
+                    playBtn.innerHTML = '<svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" rx="1"></rect><rect x="14" y="4" width="4" height="16" rx="1"></rect></svg>'; 
+                    centerIcon.innerHTML = '<polygon points="5 3 19 12 5 21 5 3"></polygon>'; 
+                    triggerIndicator(centerIndicator);
+                    showControls(); 
+                }).catch(()=>{}); 
+            } else { 
+                video.pause(); 
+                playBtn.innerHTML = '<svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>'; 
+                centerIcon.innerHTML = '<rect x="6" y="4" width="4" height="16" rx="1"></rect><rect x="14" y="4" width="4" height="16" rx="1"></rect>'; 
+                triggerIndicator(centerIndicator);
+                showControls(); 
+            }
+        }
+
+        let isMouseOverPlayer = false;
+
+        function showControls() {
+            playerWrapper.classList.add('show-controls');
+            clearTimeout(hideControlsTimeout);
+            if (!video.paused && !isMouseOverPlayer) {
+                hideControlsTimeout = setTimeout(() => {
+                    playerWrapper.classList.remove('show-controls');
+                    settingsMenu.classList.remove('show');
+                }, 5000);
+            }
+        }
+
+        if (!isTouchDevice) {
+            playerWrapper.addEventListener('mousemove', showControls);
+            playerWrapper.addEventListener('mouseenter', () => {
+                isMouseOverPlayer = true;
+                playerWrapper.classList.add('show-controls');
+                clearTimeout(hideControlsTimeout);
+            });
+            playerWrapper.addEventListener('mouseleave', () => {
+                isMouseOverPlayer = false;
+                if (!video.paused) {
+                    hideControlsTimeout = setTimeout(() => {
+                        playerWrapper.classList.remove('show-controls');
+                        settingsMenu.classList.remove('show');
+                    }, 1500);
+                }
+            });
+        }
+
+        playBtn.addEventListener('click', togglePlay);
+
+        let isDraggingTimeline = false;
+
+        function getTimelinePos(e) {
+            const rect = progressContainer.getBoundingClientRect();
+            let clientX = e.clientX || (e.touches ? e.touches[0].clientX : (e.changedTouches ? e.changedTouches[0].clientX : 0));
+            return Math.max(0, Math.min((clientX - rect.left) / rect.width, 1));
+        }
+
+        if (!isTouchDevice) {
+            progressContainer.addEventListener('mousemove', (e) => {
+                if (!isDraggingTimeline) {
+                    seekPreviewBar.style.width = (getTimelinePos(e) * 100) + '%';
+                    seekPreviewBar.classList.add('active');
+                }
+            });
+            progressContainer.addEventListener('mouseleave', () => { 
+                if (!isDraggingTimeline) seekPreviewBar.classList.remove('active'); 
+            });
+        }
+
+        function startDrag(e) {
+            isDraggingTimeline = true;
+            seekPreviewBar.classList.add('active'); 
+            updateDrag(e);
+            document.addEventListener('mousemove', updateDrag);
+            document.addEventListener('touchmove', updateDrag, { passive: false });
+            document.addEventListener('mouseup', endDrag);
+            document.addEventListener('touchend', endDrag);
+        }
+
+        function updateDrag(e) {
+            if (!isDraggingTimeline) return;
+            if (e.type === 'touchmove') e.preventDefault(); 
+            const pos = getTimelinePos(e);
+            seekPreviewBar.style.width = (pos * 100) + '%';
+            progressBar.style.width = (pos * 100) + '%'; 
+            timeDisplay.textContent = `${formatTime(pos * video.duration)} / ${formatTime(video.duration || 0)}`;
+        }
+
+        function endDrag(e) {
+            if (!isDraggingTimeline) return;
+            isDraggingTimeline = false;
+            video.currentTime = getTimelinePos(e) * video.duration; 
+            seekPreviewBar.classList.remove('active'); 
+            document.removeEventListener('mousemove', updateDrag);
+            document.removeEventListener('touchmove', updateDrag);
+            document.removeEventListener('mouseup', endDrag);
+            document.removeEventListener('touchend', endDrag);
+            resetControlsTimeoutOnAction();
+        }
+
+        progressContainer.addEventListener('mousedown', startDrag);
+        progressContainer.addEventListener('touchstart', startDrag, { passive: false });
+
+        video.addEventListener('timeupdate', () => {
+            if(!video.seeking && !isDraggingTimeline) { 
+                progressBar.style.width = ((video.currentTime / video.duration) * 100) + '%';
+                updateTimeDisplay();
+            }
+        });
+
+        playerWrapper.addEventListener('click', (e) => {
+            if(!e.target.closest('.top-right-container')) settingsMenu.classList.remove('show');
+            if(e.target.closest('.controls') || e.target.closest('.progress-container') || e.target.closest('.top-right-container') || e.target.closest('.download-modal')) return;
+
+            const currentTime = new Date().getTime();
+            const tapLength = currentTime - lastTapTime;
+            const rect = playerWrapper.getBoundingClientRect();
+            const clickX = e.clientX - rect.left;
+            let region = clickX < rect.width / 3 ? 'left' : (clickX > (rect.width * 2) / 3 ? 'right' : 'center');
+
+            if (!isTouchDevice) {
+                if (tapLength < 300 && tapLength > 0) { toggleFullscreen(); lastTapTime = 0; }
+                else { togglePlay(); lastTapTime = currentTime; }
+                return;
+            }
+
+            if (tapLength < 300 && tapLength > 0) {
+                if (region === 'left') { fastSeekOptimized(-5); triggerIndicator(dtLeft); }
+                else if (region === 'right') { fastSeekOptimized(5); triggerIndicator(dtRight); }
+                else togglePlay();
+                lastTapTime = 0; 
+            } else {
+                if (region === 'center') togglePlay(); 
+                else {
+                    if (playerWrapper.classList.contains('show-controls')) {
+                        playerWrapper.classList.remove('show-controls');
+                        settingsMenu.classList.remove('show');
+                        clearTimeout(hideControlsTimeout);
+                    } else resetControlsTimeoutOnAction();
+                }
+                lastTapTime = currentTime;
+            }
+        });
+
+        rewindBtn.addEventListener('click', (e) => { e.stopPropagation(); fastSeekOptimized(-5); triggerIndicator(dtLeft); resetControlsTimeoutOnAction(); });
+        forwardBtn.addEventListener('click', (e) => { e.stopPropagation(); fastSeekOptimized(5); triggerIndicator(dtRight); resetControlsTimeoutOnAction(); });
+
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                playerWrapper.requestFullscreen().catch(() => {});
+                if (screen.orientation && screen.orientation.lock) {
+                    screen.orientation.lock('landscape').catch(() => {});
+                }
+            } else {
+                document.exitFullscreen().catch(() => {});
+                if (screen.orientation && screen.orientation.unlock) {
+                    screen.orientation.unlock();
+                }
+            }
+        }
+        fullscreenBtn.addEventListener('click', (e) => { e.stopPropagation(); toggleFullscreen(); });
+
+        document.addEventListener('fullscreenchange', () => {
+            playerWrapper.classList.toggle('is-fullscreen', !!document.fullscreenElement);
+            if (!document.fullscreenElement) {
+                if (screen.orientation && screen.orientation.unlock) {
+                    screen.orientation.unlock();
+                }
+            }
+        });
+
+        function updateMuteIcon() {
+            if (video.muted || video.volume === 0) {
+                muteBtn.innerHTML = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 5L6 9H2V15H6L11 19V5Z"></path><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line></svg>';
+            } else {
+                muteBtn.innerHTML = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>';
+            }
+        }
+
+        video.addEventListener('volumechange', () => {
+            updateMuteIcon();
+        });
+
+        muteBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            video.muted = !video.muted;
+            if (!video.muted && video.volume === 0) {
+                video.volume = 1;
+            }
+            resetControlsTimeoutOnAction();
+        });
+
+        function formatTime(seconds) {
+            if (isNaN(seconds) || seconds < 0) return '00:00';
+            const h = Math.floor(seconds / 3600), m = Math.floor((seconds % 3600) / 60), s = Math.floor(seconds % 60);
+            return h > 0 ? `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}` : `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+        }
+
+        function updateTimeDisplay(manualCurrent) {
+            const cur = manualCurrent !== undefined ? manualCurrent : video.currentTime;
+            timeDisplay.textContent = `${formatTime(cur)} / ${formatTime(video.duration || 0)}`;
+        }
+
+        document.addEventListener('keydown', (e) => {
+            const key = e.key.toLowerCase();
+            if (key === 'k' || key === ' ' || e.code === 'Space') { e.preventDefault(); togglePlay(); }
+            else if (key === 'arrowleft' || key === '<' || key === ',') { fastSeekOptimized(-5); triggerIndicator(dtLeft); }
+            else if (key === 'arrowright' || key === '>' || key === '.') { fastSeekOptimized(5); triggerIndicator(dtRight); }
+            else if (key === 'f') toggleFullscreen();
+            else if (key === 'm') muteBtn.click();
+        });
+
+        video.addEventListener('waiting', () => loading.classList.add('active'));
+        video.addEventListener('playing', () => loading.classList.remove('active'));
+
+        function resetControlsTimeoutOnAction() {
+            playerWrapper.classList.add('show-controls');
+            clearTimeout(hideControlsTimeout);
+            // Mouse player ke andar ho to timer mat lagao
+            if (!video.paused && !isMouseOverPlayer) {
+                hideControlsTimeout = setTimeout(() => {
+                    playerWrapper.classList.remove('show-controls');
+                    settingsMenu.classList.remove('show');
+                }, 5000);
+            }
+        }
+    })();
+</script>
+</body>
+</html>
