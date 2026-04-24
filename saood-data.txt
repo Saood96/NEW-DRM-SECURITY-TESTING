@@ -3,7 +3,7 @@
 #EXT-X-TARGETDURATION:65
 #EXT-X-MEDIA-SEQUENCE:0
 #EXT-X-PLAYLIST-TYPE:VOD
-#EXT-X-KEY:METHOD=AES-128,URI="https://new-security-testing.onrender.com/key",IV=0x00000000000000000000000000000000
+#EXT-X-KEY:METHOD=AES-128,URI="https://sparkling-lake-833b.qazslfdgcnedfcnuyhbv.workers.dev/enc.key",IV=0x00000000000000000000000000000000
 #EXTINF:60.560000,
 https://newsecuritytesting.qazslfdgcnedfcnuyhbv.workers.dev/stream/27?hash=0da662
 #EXTINF:63.760000,
