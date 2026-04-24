@@ -3,24 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ZS Official Player</title>
+    <title>ZS Official Player - Final Fix</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/hls.js@1"></script>
-
     <style>
-        /* --- DESIGN AUR CSS (NO CHANGES) --- */
+        /* ... (Sara purana CSS waisa hi rahega) ... */
         body { background: #02040a; color: #fff; margin: 0; font-family: 'Inter', sans-serif; }
         .zs-player-container { width: 100%; max-width: 900px; margin: 40px auto; position: relative; border: 2px solid #D4AF37; border-radius: 12px; overflow: hidden; background: #000; box-shadow: 0 0 30px rgba(212, 175, 55, 0.2); }
         video { width: 100%; display: block; background: #000; }
         .controls { position: absolute; bottom: 0; left: 0; right: 0; background: linear-gradient(transparent, rgba(0,0,0,0.9)); padding: 20px; display: flex; gap: 15px; align-items: center; z-index: 10; }
         .play-btn { background: #D4AF37; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-weight: bold; font-family: 'Orbitron'; }
-        .play-btn:hover { background: #f1c40f; }
     </style>
 </head>
 <body>
 
 <div class="zs-player-container">
-    <video id="video" crossorigin="anonymous" playsinline></video>
+    <video id="video" crossorigin="anonymous" playsinline poster="https://files.catbox.moe/v33t1o.jpg"></video>
     <div class="controls">
         <button class="play-btn" id="playBtn">PLAY / PAUSE</button>
         <span id="timeDisplay" style="font-family: 'Orbitron'; font-size: 14px; color: #D4AF37;">00:00 / 00:00</span>
@@ -33,12 +31,13 @@
         const playBtn = document.getElementById('playBtn');
         const timeDisplay = document.getElementById('timeDisplay');
 
-        // --- FIXED DATA SOURCE LINK ---
+        // --- FINAL SECURE LINK ---
         const source = "https://raw.githubusercontent.com/Saood96/NEW-DRM-SECURITY-TESTING/main/saood-data.txt";
 
         if (Hls.isSupported()) {
             const hls = new Hls({
-                // CORS aur Fast Loading ke liye settings
+                debug: false,
+                // Cloudflare CORS Fix ke liye zaroori settings
                 xhrSetup: function(xhr, url) {
                     xhr.withCredentials = false;
                 }
@@ -48,34 +47,21 @@
             hls.attachMedia(video);
 
             hls.on(Hls.Events.MANIFEST_PARSED, function() {
-                console.log("ZS Player: Manifest loaded successfully!");
+                console.log("Player Ready!");
             });
 
-            // Error Handling (Key ya Segment issues ke liye)
+            // Agar key load nahi hoti toh ye handle karega
             hls.on(Hls.Events.ERROR, function (event, data) {
                 if (data.fatal) {
-                    switch (data.type) {
-                        case Hls.ErrorTypes.NETWORK_ERROR:
-                            console.error("Network error, retrying...");
-                            hls.startLoad();
-                            break;
-                        case Hls.ErrorTypes.MEDIA_ERROR:
-                            console.error("Media error, recovering...");
-                            hls.recoverMediaError();
-                            break;
-                        default:
-                            hls.destroy();
-                            break;
-                    }
+                    console.error("HLS Error:", data.details);
+                    hls.recoverMediaError();
                 }
             });
         } 
         else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-            // Safari support ke liye
             video.src = source;
         }
 
-        // Basic Controls
         playBtn.addEventListener('click', () => {
             if (video.paused) video.play();
             else video.pause();
@@ -89,6 +75,5 @@
         });
     })();
 </script>
-
 </body>
 </html>
