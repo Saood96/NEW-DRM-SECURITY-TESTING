@@ -258,7 +258,7 @@
                 
                 hls.on(Hls.Events.ERROR, (event, data) => { 
                     if (data.details === 'keyLoadError') {
-                        console.error("Key Error please Contact with Saood on Telegram");
+                        console.error("DRM Key Load Error. Please check Cloudflare CORS.");
                     }
                 });
             } else {
