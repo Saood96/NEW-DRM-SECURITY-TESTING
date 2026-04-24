@@ -8,7 +8,7 @@
     <script src="https://cdn.jsdelivr.net/npm/hls.js@1"></script>
 
     <style>
-        /* --- AAPKA PURANA CSS --- */
+        /* --- AAPKA PURANA CSS (NO CHANGES) --- */
         .zs-player-container, .zs-player-container * { box-sizing: border-box; margin: 0; padding: 0; }
         .zs-player-container ::-webkit-scrollbar { width: 8px; height: 8px; }
         .zs-player-container ::-webkit-scrollbar-track { background: #030617; }
@@ -155,10 +155,6 @@
         const video = document.getElementById('video');
         const playerWrapper = document.getElementById('playerWrapper');
         
-        // --- NEW SECURITY LINKS CONFIGURATION ---
-        const RENDER_URL = "https://key-server-b2qf.onrender.com"; 
-        
-        // YAHAN BADLAV KIYA HAI: Ab ye .m3u8 ki jagah .txt file dhoondega
         const videoSourceText = "saood-data.txt"; 
 
         const playBtn = document.getElementById('playBtn');
@@ -242,35 +238,27 @@
 
         document.addEventListener('contextmenu', (e) => e.preventDefault());
 
-        // --- NEW SECURE TOKEN HLS LOGIC (BLOB TRICK) ---
+        // --- NEW SECURE TOKEN HLS LOGIC (CLEANED FOR CLOUDFLARE) ---
         try {
-            // 1. Chupke se saood-data.txt ka data fetch karna
             const response = await fetch(videoSourceText);
             const playlistText = await response.text();
 
-            // 2. Data ko "Memory" mein ek nakli file (Blob) banana
             const blob = new Blob([playlistText], { type: 'application/vnd.apple.mpegurl' });
             const hiddenBlobUrl = URL.createObjectURL(blob);
 
             if (Hls.isSupported()) {
                 const hls = new Hls({ 
                     maxMaxBufferLength: 60, 
-                    maxBufferSize: 60 * 1000 * 1000,
-                    xhrSetup: function(xhr, url) {
-                        // Secret Password lock (Bina iske render chabhi nahi dega)
-                        if (url.includes('new-security-testing.onrender.com/key')) {
-                            xhr.setRequestHeader('x-saood-token', 'wearvibe-premium-lock');
-                        }
-                    }
+                    maxBufferSize: 60 * 1000 * 1000
+                    // YAHAN SE PURANA Render 'xhrSetup' HEADER HATA DIYA GAYA HAI
                 });
                 
-                // 3. Player ko memory wala link dena, asli link nahi!
                 hls.loadSource(hiddenBlobUrl);
                 hls.attachMedia(video);
                 
                 hls.on(Hls.Events.ERROR, (event, data) => { 
                     if (data.details === 'keyLoadError') {
-                        alert("SECURITY BLOCK: Unauthorized Download Blocked 🚫");
+                        console.error("Key Error please Contact with Saood on Telegram");
                     }
                 });
             } else {
@@ -514,7 +502,6 @@
         function resetControlsTimeoutOnAction() {
             playerWrapper.classList.add('show-controls');
             clearTimeout(hideControlsTimeout);
-            // Mouse player ke andar ho to timer mat lagao
             if (!video.paused && !isMouseOverPlayer) {
                 hideControlsTimeout = setTimeout(() => {
                     playerWrapper.classList.remove('show-controls');
